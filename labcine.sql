@@ -62,7 +62,7 @@ CREATE TABLE horario(
 
 DROP TABLE IF EXISTS pelicula;
 CREATE TABLE pelicula(
-    pelicula_ID int PRIMARY KEY,
+    pelicula_ID int AUTO_INCREMENT PRIMARY KEY,
     titulo varchar(30),
     estudio varchar(30),
     clasificacion enum('G','PG','PG-13','R','NC-17'),
@@ -338,17 +338,20 @@ WHERE p.clasificacion = 'PG-13' AND pi.idioma = 'Español';
 SELECT idioma , COUNT(pelicula_ID) AS cantidad_peliculas
 FROM pelicula_idioma
 GROUP BY idioma;
+
 -- b) Muestre los directores u actores que aparecen en 3 películas como mínimo
 SELECT p.* ,COUNT(dp.persona_ID_director) AS Cantidad_peliculas
 FROM director_pelicula dp
 JOIN persona p ON p.persona_ID = dp.persona_ID_director
 GROUP BY dp.persona_ID_director
 HAVING COUNT(dp.persona_ID_director) >= 3;
+
 -- c) Defina una consulta que involucre por lo menos dos tablas y un Group By.
 SELECT t.tecnologia, GROUP_CONCAT(sc.nombre ORDER BY sc.sala_ID) AS Nombres_Salas
 FROM sala_cine_tecnologia t
 JOIN sala_cine sc ON t.sala_ID = sc.sala_ID
 GROUP BY t.tecnologia;
+
 -- d) Defina una consulta que involucre por lo menos dos tablas y una función de agregación.
 SELECT sc.tipo_asiento, SUM(sc.capacidad) AS Capacidad_Total
 FROM sala_cine sc
@@ -359,8 +362,8 @@ GROUP BY sc.tipo_asiento;
 
 -- a) Implemente una función que dado una sala de cine y un idioma, retorne la cantidad de películas proyectadas bajo el idioma indicado
 DELIMITER //
-DROP FUNCTION IF EXISTS cantidad_peliculas //
-CREATE FUNCTION cantidad_peliculas(sala_id INT, idioma_pelicula VARCHAR(20)) RETURNS INT DETERMINISTIC
+DROP FUNCTION IF EXISTS CantidadPeliculas //
+CREATE FUNCTION CantidadPeliculas(sala_id INT, idioma_pelicula VARCHAR(20)) RETURNS INT DETERMINISTIC
 BEGIN
     DECLARE cantidadPeliculas INT;
 
@@ -373,12 +376,79 @@ BEGIN
     RETURN cantidadPeliculas;
 END //
 DELIMITER ;
-SELECT cantidad_peliculas(1,'español');
+SELECT CantidadPeliculas(1,'español');
+
 -- b) Implemente una función que reciba como mínimo 2 parámetros de entrada
+DELIMITER //
+DROP FUNCTION IF EXISTS ContarPeliculasPorDirector //
+CREATE FUNCTION ContarPeliculasPorDirector(director_nombre VARCHAR(20), director_apellido VARCHAR(20))
+RETURNS INT DETERMINISTIC
+BEGIN
+    DECLARE director_id INT;
+	DECLARE cantidad_peliculas INT;
+
+    SELECT persona_ID INTO director_id
+    FROM director
+    WHERE persona_ID = (SELECT persona_ID FROM persona WHERE nombres = director_nombre AND prim_apellido = director_apellido);
+
+    SELECT COUNT(*) INTO cantidad_peliculas
+    FROM director_pelicula
+    WHERE persona_ID_director = director_id;
+
+    RETURN cantidad_peliculas;
+END //
+DELIMITER ;
+SELECT ContarPeliculasPorDirector('Camila','López');
 
 -- c) Implemente un procedimiento almacenado que por medio del nombre y apellidos de un responsable de sala, se obtenga la información 
 -- detallada de las salas, películas, géneros, nombre de directores y horario en la que estuvo a cargo.
+DELIMITER //
+DROP PROCEDURE IF EXISTS ObtenerInformacionResponsable //
+CREATE PROCEDURE ObtenerInformacionResponsable(IN nombreResponsable VARCHAR(20), IN apellidoResponsable VARCHAR(20))
+BEGIN
+    DECLARE personaID_responsable INT;
+
+    SELECT persona_ID INTO personaID_responsable
+    FROM persona
+    WHERE nombres = nombreResponsable AND prim_apellido = apellidoResponsable;
+
+    SELECT *
+    FROM sala_cine sc
+    JOIN persona p ON p.persona_ID = sc.persona_ID_responsable
+    WHERE persona_ID_responsable = personaID_responsable;
+END //
+DELIMITER ;
+CALL ObtenerInformacionResponsable('Pedro','Pérez');
 
 -- d) Implemente un procedimiento almacenado que reciba por lo menos 3 parámetros de entrada
+DELIMITER //
+DROP PROCEDURE IF EXISTS InsertarPelicula //
+CREATE PROCEDURE InsertarPelicula(
+    IN titulo VARCHAR(30),
+    IN estudio VARCHAR(30),
+    IN clasificacion ENUM('G','PG','PG-13','R','NC-17'),
+    IN sinopsis VARCHAR(200)
+)
+BEGIN
+    INSERT INTO pelicula (titulo, estudio, clasificacion, sinopsis)
+    VALUES (titulo, estudio, clasificacion, sinopsis);
+    SELECT 'Película insertada exitosamente.' AS Mensaje;
+END //
+DELIMITER ;
+CALL InsertarPelicula('Shrek', 'Dream Works' , 'G' , 'Un ogro');
 
 -- e) Implemente un procedimiento almacenado que utilice una de las funciones anteriores.
+DELIMITER //
+DROP PROCEDURE IF EXISTS CantidadIdiomas //
+CREATE PROCEDURE CantidadIdiomas(IN sala_id INT)
+BEGIN
+    DECLARE cantidad_espanol INT;
+    DECLARE cantidad_ingles INT;
+    
+    SELECT CantidadPeliculas(sala_id, 'español') INTO cantidad_espanol;
+    SELECT CantidadPeliculas(sala_id, 'ingles') INTO cantidad_ingles;
+
+    SELECT cantidad_espanol AS Español, cantidad_ingles AS Ingles;
+END //
+DELIMITER ;
+CALL CantidadIdiomas(1);
