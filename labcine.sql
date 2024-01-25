@@ -366,13 +366,11 @@ DROP FUNCTION IF EXISTS CantidadPeliculas //
 CREATE FUNCTION CantidadPeliculas(sala_id INT, idioma_pelicula VARCHAR(20)) RETURNS INT DETERMINISTIC
 BEGIN
     DECLARE cantidadPeliculas INT;
-
     SELECT COUNT(DISTINCT scp.pelicula_ID)
     INTO cantidadPeliculas
     FROM sala_cine_pelicula scp
     JOIN pelicula_idioma pi ON scp.pelicula_ID = pi.pelicula_ID
     WHERE scp.sala_ID = sala_id AND pi.idioma = idioma_pelicula;
-
     RETURN cantidadPeliculas;
 END //
 DELIMITER ;
@@ -386,15 +384,12 @@ RETURNS INT DETERMINISTIC
 BEGIN
     DECLARE director_id INT;
 	DECLARE cantidad_peliculas INT;
-
     SELECT persona_ID INTO director_id
     FROM director
     WHERE persona_ID = (SELECT persona_ID FROM persona WHERE nombres = director_nombre AND prim_apellido = director_apellido);
-
     SELECT COUNT(*) INTO cantidad_peliculas
     FROM director_pelicula
     WHERE persona_ID_director = director_id;
-
     RETURN cantidad_peliculas;
 END //
 DELIMITER ;
@@ -407,11 +402,9 @@ DROP PROCEDURE IF EXISTS ObtenerInformacionResponsable //
 CREATE PROCEDURE ObtenerInformacionResponsable(IN nombreResponsable VARCHAR(20), IN apellidoResponsable VARCHAR(20))
 BEGIN
     DECLARE personaID_responsable INT;
-
     SELECT persona_ID INTO personaID_responsable
     FROM persona
     WHERE nombres = nombreResponsable AND prim_apellido = apellidoResponsable;
-
     SELECT *
     FROM sala_cine sc
     JOIN persona p ON p.persona_ID = sc.persona_ID_responsable
@@ -444,10 +437,8 @@ CREATE PROCEDURE CantidadIdiomas(IN sala_id INT)
 BEGIN
     DECLARE cantidad_espanol INT;
     DECLARE cantidad_ingles INT;
-    
     SELECT CantidadPeliculas(sala_id, 'español') INTO cantidad_espanol;
     SELECT CantidadPeliculas(sala_id, 'ingles') INTO cantidad_ingles;
-
     SELECT cantidad_espanol AS Español, cantidad_ingles AS Ingles;
 END //
 DELIMITER ;
