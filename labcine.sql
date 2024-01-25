@@ -44,7 +44,6 @@ CREATE TABLE sala_cine(
     ubicacion varchar(1),
     capacidad int,
     persona_ID_responsable int,
-    pelicula_ID_pelicula int,  
     horario_ID_horario int  
 );
 
@@ -91,6 +90,13 @@ CREATE TABLE actor_pelicula(
     PRIMARY KEY(persona_ID_actor,pelicula_ID_pelicula)
 );
 
+DROP TABLE IF EXISTS sala_cine_pelicula;
+CREATE TABLE sala_cine_pelicula(
+    sala_ID int,
+    pelicula_ID int,
+    PRIMARY KEY(sala_ID,pelicula_ID)
+);
+
 ALTER TABLE responsable ADD FOREIGN KEY (persona_ID) REFERENCES persona (persona_ID);
 ALTER TABLE responsable ADD FOREIGN KEY (sala_ID_sala_cine) REFERENCES sala_cine (sala_ID);
 ALTER TABLE director ADD FOREIGN KEY (persona_ID) REFERENCES persona (persona_ID);
@@ -98,12 +104,13 @@ ALTER TABLE director ADD FOREIGN KEY (persona_ID) REFERENCES director_pelicula (
 ALTER TABLE actor ADD FOREIGN KEY (persona_ID) REFERENCES persona (persona_ID);
 ALTER TABLE sala_cine ADD FOREIGN KEY (sala_ID) REFERENCES sala_cine_tecnologia (sala_ID);
 ALTER TABLE sala_cine ADD FOREIGN KEY (persona_ID_responsable) REFERENCES responsable (persona_ID);
-ALTER TABLE sala_cine ADD FOREIGN KEY (pelicula_ID_pelicula) REFERENCES pelicula (pelicula_ID);
 ALTER TABLE sala_cine ADD FOREIGN KEY (horario_ID_horario) REFERENCES horario (horario_ID);
 ALTER TABLE director_pelicula ADD FOREIGN KEY (pelicula_ID_pelicula) REFERENCES pelicula (pelicula_ID);
 ALTER TABLE actor_pelicula ADD FOREIGN KEY (persona_ID_actor) REFERENCES actor (persona_ID);
 ALTER TABLE actor_pelicula ADD FOREIGN KEY (pelicula_ID_pelicula) REFERENCES pelicula (pelicula_ID);
 ALTER TABLE pelicula_idioma ADD FOREIGN KEY (pelicula_ID) REFERENCES pelicula (pelicula_ID);
+ALTER TABLE sala_cine_pelicula ADD FOREIGN KEY (pelicula_ID) REFERENCES pelicula (pelicula_ID);
+ALTER TABLE sala_cine_pelicula ADD FOREIGN KEY (sala_ID) REFERENCES sala_cine (sala_ID);
 
 INSERT INTO sala_cine_tecnologia (sala_ID, tecnologia) VALUES
   (1, '2D'),
@@ -112,13 +119,13 @@ INSERT INTO sala_cine_tecnologia (sala_ID, tecnologia) VALUES
   (4, '2D'),
   (5, '3D');
 
-INSERT INTO sala_cine (sala_ID, nombre, tipo, tipo_asiento, tipo_pantalla, ubicacion, capacidad, persona_ID_responsable, pelicula_ID_pelicula, horario_ID_horario)
+INSERT INTO sala_cine (sala_ID, nombre, tipo, tipo_asiento, tipo_pantalla, ubicacion, capacidad, persona_ID_responsable, horario_ID_horario)
 VALUES
-  (1, 'Sala 1', 'VIP', 'cama', 'plano', 'A', 50, NULL, NULL, NULL),
-  (2, 'Sala 2', 'Normal', 'normal', 'curvo', 'B', 100, NULL, NULL, NULL),
-  (3, 'Sala 3', 'Premium', 'cama', 'plano', 'C', 80, NULL, NULL, NULL),
-  (4, 'Sala 4', 'VIP', 'normal', 'curvo', 'D', 120, NULL, NULL, NULL),
-  (5, 'Sala 5', 'Normal', 'cama', 'plano', 'E', 70, NULL, NULL, NULL);
+  (1, 'Sala 1', 'VIP', 'cama', 'plano', 'A', 50, NULL, NULL),
+  (2, 'Sala 2', 'Normal', 'normal', 'curvo', 'B', 100, NULL, NULL),
+  (3, 'Sala 3', 'Premium', 'cama', 'plano', 'C', 80, NULL, NULL),
+  (4, 'Sala 4', 'VIP', 'normal', 'curvo', 'D', 120, NULL, NULL),
+  (5, 'Sala 5', 'Normal', 'cama', 'plano', 'E', 70, NULL, NULL);
 
 INSERT INTO horario (horario_ID, fecha_hora)
 VALUES
@@ -197,16 +204,16 @@ VALUES
   
 
 -- Laboratorio 11
-INSERT INTO sala_cine (sala_ID, nombre, tipo, tipo_asiento, tipo_pantalla, ubicacion, capacidad, persona_ID_responsable, pelicula_ID_pelicula, horario_ID_horario)
+INSERT INTO sala_cine (sala_ID, nombre, tipo, tipo_asiento, tipo_pantalla, ubicacion, capacidad, persona_ID_responsable, horario_ID_horario)
 VALUES
-  (6, 'Sala 6', 'VIP', 'cama', 'plano', 'F', 60, 6, 1, 1),
-  (7, 'Sala 7', 'Normal', 'normal', 'curvo', 'G', 90, 7, 2, 2),
-  (8, 'Sala 8', 'Premium', 'cama', 'plano', 'H', 75, 8, 3, 3),
-  (9, 'Sala 9', 'VIP', 'normal', 'curvo', 'I', 110, 9, 4, 4),
-  (10, 'Sala 10', 'Normal', 'cama', 'plano', 'J', 85, 10, 5, 5),
-  (11, 'Sala 11', 'VIP', 'cama', 'plano', 'K', 70, NULL, NULL, NULL),
-  (12, 'Sala 12', 'Normal', 'normal', 'curvo', 'L', 95, NULL, NULL, NULL),
-  (13, 'Sala 13', 'Premium', 'cama', 'plano', 'M', 80, NULL, NULL, NULL);
+  (6, 'Sala 6', 'VIP', 'cama', 'plano', 'F', 60, 6, 1),
+  (7, 'Sala 7', 'Normal', 'normal', 'curvo', 'G', 90, 7, 2),
+  (8, 'Sala 8', 'Premium', 'cama', 'plano', 'H', 75, 8, 3),
+  (9, 'Sala 9', 'VIP', 'normal', 'curvo', 'I', 110, 9, 4),
+  (10, 'Sala 10', 'Normal', 'cama', 'plano', 'J', 85, 10, 5),
+  (11, 'Sala 11', 'VIP', 'cama', 'plano', 'K', 70, NULL, NULL),
+  (12, 'Sala 12', 'Normal', 'normal', 'curvo', 'L', 95, NULL, NULL),
+  (13, 'Sala 13', 'Premium', 'cama', 'plano', 'M', 80, NULL, NULL);
 
 INSERT INTO horario (horario_ID, fecha_hora)
 VALUES
@@ -286,6 +293,16 @@ VALUES
   (14, 8),
   (16, 10);
   
+INSERT INTO sala_cine_pelicula 
+VALUES
+	(1, 1),
+    (1, 2),
+    (1, 3),
+    (1, 4),
+    (2, 1),
+    (2, 2),
+    (2, 3);
+  
   -- a) Mostrar los nombres, apellidos, nacionalidad y edad de todos los directores:
 SELECT p.nombres, p.prim_apellido, p.nacionalidad, YEAR(CURDATE()) - YEAR(p.fecha_nacimiento) AS edad
 FROM director_pelicula dp
@@ -296,11 +313,11 @@ SELECT pelicula_ID, titulo
 FROM pelicula;
 
 -- c) Mostrar todas las películas que se emitieron en el último año:
-SELECT s.sala_ID, s.nombre AS nombre_sala, h.fecha_hora, p.titulo AS titulo_pelicula
-FROM sala_cine s
-JOIN horario h ON s.horario_ID_horario = h.horario_ID
-LEFT JOIN pelicula p ON s.pelicula_ID_pelicula = p.pelicula_ID
-WHERE YEAR(h.fecha_hora) = 2023;
+-- SELECT s.sala_ID, s.nombre AS nombre_sala, h.fecha_hora, p.titulo AS titulo_pelicula
+-- FROM sala_cine s
+-- JOIN horario h ON s.horario_ID_horario = h.horario_ID
+-- LEFT JOIN pelicula p ON s.pelicula_ID_pelicula = p.pelicula_ID
+-- WHERE YEAR(h.fecha_hora) = 2023;
 
 -- d) Definir una consulta que involucre al menos dos tablas y una condición (como ejemplo, estoy utilizando las tablas pelicula y director_pelicula):
 SELECT p.pelicula_ID, p.titulo, dp.persona_ID_director, per.nombres AS nombre_director
@@ -341,7 +358,22 @@ GROUP BY sc.tipo_asiento;
 -- LABORATORIO 15
 
 -- a) Implemente una función que dado una sala de cine y un idioma, retorne la cantidad de películas proyectadas bajo el idioma indicado
+DELIMITER //
+DROP FUNCTION IF EXISTS cantidad_peliculas //
+CREATE FUNCTION cantidad_peliculas(sala_id INT, idioma_pelicula VARCHAR(20)) RETURNS INT DETERMINISTIC
+BEGIN
+    DECLARE cantidadPeliculas INT;
 
+    SELECT COUNT(DISTINCT scp.pelicula_ID)
+    INTO cantidadPeliculas
+    FROM sala_cine_pelicula scp
+    JOIN pelicula_idioma pi ON scp.pelicula_ID = pi.pelicula_ID
+    WHERE scp.sala_ID = sala_id AND pi.idioma = idioma_pelicula;
+
+    RETURN cantidadPeliculas;
+END //
+DELIMITER ;
+SELECT cantidad_peliculas(1,'español');
 -- b) Implemente una función que reciba como mínimo 2 parámetros de entrada
 
 -- c) Implemente un procedimiento almacenado que por medio del nombre y apellidos de un responsable de sala, se obtenga la información 
