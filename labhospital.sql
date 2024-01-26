@@ -441,3 +441,14 @@ SELECT CONCAT(persona.nombre, ' ', persona.prim_apellido, ' ', persona.seg_apell
 FROM paciente
 JOIN persona ON paciente.persona_ID = persona.persona_ID
 WHERE CONCAT(persona.nombre, ' ', persona.prim_apellido, ' ', persona.seg_apellido) LIKE '%C%';
+
+-- LABORATORIO 16
+
+-- a) Implemente una función que dado el nombre y apellido de un doctor o enfermera, muestre la cantidad de pacientes que tiene a cargo.
+-- b) Implemente una función que reciba como mínimo 2 parámetros de entrada
+-- c) Implemente un procedimiento almacenado que por medio de una enfermedad, muestre todos los pacientes atendidos
+-- (nombre, apellidos, teléfonos) junto a su medico que lo atendió.
+-- d) Implemente un procedimiento almacenado que reciba por lo menos 3 parámetros de entrada
+-- e) Implemente un procedimiento almacenado que utilice una de las funciones anteriores.
+
+

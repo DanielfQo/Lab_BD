@@ -1,4 +1,3 @@
-
 DROP DATABASE IF EXISTS labveterinaria;
 CREATE SCHEMA labveterinaria;
 
@@ -6,7 +5,7 @@ USE labveterinaria;
 
 DROP TABLE IF EXISTS persona;
 CREATE TABLE persona (
-  persona_ID int,
+  persona_ID int AUTO_INCREMENT ,
   nombres varchar(20),
   prim_apellido varchar(20),
   seg_apellido varchar(20) ,
@@ -40,7 +39,7 @@ CREATE TABLE veterinario (
 
 DROP TABLE IF EXISTS mascota;
 CREATE TABLE mascota (
-	mascota_ID int,
+	mascota_ID int AUTO_INCREMENT ,
     raza varchar(30),
     edad int,
     PRIMARY KEY(mascota_ID)
@@ -338,3 +337,79 @@ SELECT m.raza, ROUND(AVG(m.edad)) AS promedio_edad
 FROM mascota m
 LEFT JOIN mascota_enfermedad me ON m.mascota_ID = me.mascota_ID
 GROUP BY m.raza;
+
+-- LABORATORIO 15
+
+-- a) Implemente una función que permita conocer la cantidad de mascotas atendidas por un veterinario, dando como datos
+-- de entrada su nombre y mes en el que trabajo.
+DELIMITER //
+DROP FUNCTION IF EXISTS obtenerCantidadMascotasAtendidas //
+CREATE FUNCTION obtenerCantidadMascotasAtendidas(veterinario_nombre VARCHAR(20),mes_trabajo INT) RETURNS INT DETERMINISTIC
+BEGIN
+    DECLARE cantidad_mascotas INT;
+    SELECT COUNT(*) INTO cantidad_mascotas
+    FROM veterinario_mascota vm
+    JOIN veterinario v ON vm.persona_ID_veterinario = v.persona_ID
+    JOIN persona p ON v.persona_ID = p.persona_ID
+    WHERE p.nombres = veterinario_nombre AND MONTH(v.fecha_contratacion) = mes_trabajo;
+    RETURN cantidad_mascotas;
+END //
+DELIMITER ;
+SELECT obtenerCantidadMascotasAtendidas('Michael', 12);
+-- b) Implemente una función que reciba como mínimo 2 parámetros de entrada
+DELIMITER //
+DROP PROCEDURE IF EXISTS actualizarDireccionPersona //
+CREATE PROCEDURE actualizarDireccionPersona(IN personaID INT, IN nuevaDireccion VARCHAR(50))
+BEGIN
+    UPDATE persona
+    SET direccion = nuevaDireccion
+    WHERE persona_ID = personaID;
+    SELECT CONCAT('Dirección actualizada a: ', nuevaDireccion) AS 'Resultado';
+END //
+DELIMITER ;
+CALL actualizarDireccionPersona(1,'124 Calle');
+-- c) Implemente un procedimiento almacenado que dado el nombre y apellido de un cliente, le permita obtener la
+-- información detallada de sus mascotas, vacunas, fechas de su aplicación y las observaciones echas por su veterinario.
+DELIMITER //
+DROP PROCEDURE IF EXISTS obtenerInformacionCliente //
+CREATE PROCEDURE obtenerInformacionCliente(IN nombre_cliente VARCHAR(20), IN apellido_cliente VARCHAR(20))
+BEGIN
+    SELECT *
+    FROM cliente_mascota cm
+    JOIN mascota m ON cm.mascota_ID = m.mascota_ID
+    JOIN vacuna v ON m.mascota_ID = v.mascota_ID_mascota
+    JOIN veterinario_mascota vm ON m.mascota_ID = vm.mascota_ID
+    WHERE cm.persona_ID_cliente = (SELECT persona_ID FROM persona WHERE nombres = nombre_cliente AND prim_apellido = apellido_cliente);
+END //
+DELIMITER ;
+CALL obtenerInformacionCliente('John','Doe');
+-- d) Implemente un procedimiento almacenado que reciba por lo menos 3 parámetros de entrada
+DELIMITER //
+DROP PROCEDURE IF EXISTS insertarNuevaMascota //
+CREATE PROCEDURE insertarNuevaMascota(IN clienteID INT, IN edadMascota INT, IN razaMascota VARCHAR(30))
+BEGIN
+    DECLARE nuevaMascotaID INT;
+    INSERT INTO mascota (raza, edad)
+    VALUES (razaMascota, edadMascota);
+    SET nuevaMascotaID = LAST_INSERT_ID();
+    INSERT INTO cliente_mascota (persona_ID_cliente, mascota_ID)
+    VALUES (clienteID, nuevaMascotaID);
+    SELECT CONCAT('Nueva mascota insertada para el cliente con ID ', clienteID) AS 'Resultado';
+END //
+DELIMITER ;
+CALL insertarNuevaMascota(1, 3, 'Chihuahua');
+-- e) Implemente un procedimiento almacenado que utilice una de las funciones anteriores.
+DELIMITER //
+DROP PROCEDURE IF EXISTS actualizarSalarioVeterinario //
+CREATE PROCEDURE actualizarSalarioVeterinario(IN veterinario_nombre VARCHAR(20), IN mes_trabajo INT)
+BEGIN
+    DECLARE cantidad_mascotas INT;
+    DECLARE salario INT;
+    SET cantidad_mascotas = obtenerCantidadMascotasAtendidas(veterinario_nombre, mes_trabajo);
+    UPDATE veterinario v
+    SET v.salario = v.salario + (1000 * cantidad_mascotas)
+    WHERE v.persona_ID = (SELECT persona_ID FROM persona WHERE nombres = veterinario_nombre);
+    SELECT CONCAT('Salario actualizado para el veterinario ', veterinario_nombre, ' en el mes ', mes_trabajo) AS 'Resultado';
+END //
+DELIMITER ;
+CALL actualizarSalarioVeterinario('Michael', 12);

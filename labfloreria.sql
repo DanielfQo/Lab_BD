@@ -52,7 +52,7 @@ CREATE TABLE flor(
 
 DROP TABLE IF EXISTS venta;
 CREATE TABLE venta(
-	venta_ID int,
+	venta_ID int AUTO_INCREMENT,
 	fecha DATETIME,
     cliente_ID_cliente int,
     tienda_ID_tienda int,
@@ -273,4 +273,105 @@ SELECT c.nombre AS nombre_cliente, CONCAT(p.nombres, ' ', p.prim_apellido) AS no
 FROM venta v
 JOIN cliente c ON v.cliente_ID_cliente = c.cliente_ID
 JOIN personal_servicio p ON v.personal_ID_vendedor = p.personal_ID;
+
+-- LABORATORIO 16
+
+-- a) Implemente una función que dado el nombre y apellido, y la fecha de un año, de una persona del personal de
+-- servicio, muestre la cantidad de flores vendidas en esa fecha.
+DELIMITER //
+DROP FUNCTION IF EXISTS cantidadFloresVendidasPorAnio //
+CREATE FUNCTION cantidadFloresVendidasPorAnio(
+    p_nombres VARCHAR(30),
+    p_apellido VARCHAR(30),
+    p_anio_contratacion INT
+) RETURNS INT DETERMINISTIC
+BEGIN
+    DECLARE totalFlores INT;
+    DECLARE personalID INT;
+    SELECT personal_ID INTO personalID
+    FROM personal_servicio
+    WHERE nombres = p_nombres AND prim_apellido = p_apellido AND YEAR(fecha_contratacion) = p_anio_contratacion;
+    SELECT COUNT(*) INTO totalFlores
+    FROM venta
+    WHERE personal_ID_vendedor = personalID AND YEAR(fecha) = p_anio_contratacion;
+    RETURN totalFlores;
+END //
+SELECT cantidadFloresVendidasPorAnio('Javier', 'Torres', '2022') AS total_flores_vendidas;
+
+-- b) Implemente una función que reciba como mínimo 2 parámetros de entrada
+DELIMITER //
+DROP PROCEDURE IF EXISTS obtenerPersonalPorCliente //
+CREATE PROCEDURE obtenerPersonalPorCliente(
+    IN nombre_cliente_param VARCHAR(30),
+    IN apellido_cliente_param VARCHAR(30)
+)
+BEGIN
+    SELECT ps.nombres AS 'Nombres del Personal', ps.prim_apellido AS 'Primer Apellido',
+           ps.seg_apellido AS 'Segundo Apellido'
+    FROM personal_servicio ps
+    JOIN venta v ON ps.personal_ID = v.personal_ID_vendedor
+    JOIN cliente c ON v.cliente_ID_cliente = c.cliente_ID
+    WHERE c.nombre = nombre_cliente_param AND c.apellido = apellido_cliente_param;
+END //
+DELIMITER ;
+CALL obtenerPersonalPorCliente('Piero','Cardenas');
+-- c) Implemente un procedimiento almacenado que reciba los nombres, apellidos de un cliente y muestre las flores
+-- (especie, tamaño, precio y estación) adquiridas en todos los locales
+DELIMITER //
+DROP PROCEDURE IF EXISTS mostrarFloresCliente //
+CREATE PROCEDURE mostrarFloresCliente(
+    IN p_nombreCliente VARCHAR(30),
+    IN p_apellidoCliente VARCHAR(30)
+)
+BEGIN
+    SELECT f.especie, f.tamaño, f.precio, f.estacion
+    FROM venta v
+    JOIN cliente c ON v.cliente_ID_cliente = c.cliente_ID
+    JOIN flor f ON v.flor_ID_flor = f.flor_ID
+    WHERE c.nombre = p_nombreCliente AND c.apellido = p_apellidoCliente;
+END //
+DELIMITER ;
+CALL mostrarFloresCliente('Piero','Cardenas');
+-- d) Implemente un procedimiento almacenado que reciba por lo menos 3 parámetros de entrada
+DELIMITER //
+DROP PROCEDURE IF EXISTS insertarVenta //
+CREATE PROCEDURE insertarVenta(
+    IN p_clienteID INT,
+    IN p_tiendaID INT,
+    IN p_vendedorID INT,
+    IN p_florID INT,
+    IN p_fechaVenta DATETIME
+)
+BEGIN
+    DECLARE mensaje VARCHAR(50);
+    INSERT INTO venta (fecha, cliente_ID_cliente, tienda_ID_tienda, personal_ID_vendedor, flor_ID_flor)
+    VALUES (p_fechaVenta, p_clienteID, p_tiendaID, p_vendedorID, p_florID);
+    IF ROW_COUNT() > 0 THEN
+        SET mensaje = 'Se insertó nueva venta';
+    ELSE
+        SET mensaje = 'Error en la venta';
+    END IF;
+    SELECT mensaje AS Resultado;
+END //
+DELIMITER ;
+CALL insertarVenta(101,1,1,1,'2024-01-25 10:30:00');
+-- e) Implemente un procedimiento almacenado que utilice una de las funciones anteriores.
+DELIMITER //
+DROP PROCEDURE IF EXISTS usarFuncionCantidadFlores //
+CREATE PROCEDURE usarFuncionCantidadFlores(
+    IN p_nombres VARCHAR(30),
+    IN p_apellido VARCHAR(30),
+    IN p_anio_contratacion INT
+)
+BEGIN
+    DECLARE cantidad_flores INT;
+    SET cantidad_flores = cantidadFloresVendidasPorAnio(p_nombres, p_apellido, p_anio_contratacion);
+    SELECT 
+        p_nombres AS 'Nombres',
+        p_apellido AS 'Apellido',
+        p_anio_contratacion AS 'Año de Contratación',
+        cantidad_flores AS 'Cantidad de Flores Vendidas';
+END //
+DELIMITER ;
+CALL usarFuncionCantidadFlores('Michael', 'Ticona', 2022);
 
