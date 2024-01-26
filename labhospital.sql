@@ -1,7 +1,7 @@
 DROP DATABASE IF EXISTS labhospital;
 CREATE SCHEMA labhospital;
-USE labhospital;
 
+USE labhospital;
 DROP TABLE IF EXISTS persona;
 CREATE TABLE persona(
 	persona_ID int PRIMARY KEY,
@@ -413,7 +413,7 @@ JOIN historia_clinica h ON p.persona_ID = h.persona_ID_paciente
 JOIN historia_medico hm ON h.historia_ID = hm.historia_ID
 JOIN medico m ON hm.persona_ID_medico = m.persona_ID;
 
--- LABORATORIO14
+-- LABORATORIO 14
 -- a) Mostrar todos los datos personales de las enfermeras (para el caso de nombre, apellido paterno y apellido materno en
 -- una cola columna) con más de 2 pacientes a cargo
 SELECT CONCAT(p.nombre,' ', p.prim_apellido,' ', p.seg_apellido) AS Nombre_Completo
@@ -445,10 +445,52 @@ WHERE CONCAT(persona.nombre, ' ', persona.prim_apellido, ' ', persona.seg_apelli
 -- LABORATORIO 16
 
 -- a) Implemente una función que dado el nombre y apellido de un doctor o enfermera, muestre la cantidad de pacientes que tiene a cargo.
+DELIMITER //
+DROP FUNCTION IF EXISTS mostrarPacientes //
+CREATE FUNCTION mostrarPacientes(
+    p_nombreDoctor VARCHAR(30),
+    p_apellidoDoctor VARCHAR(30)
+) RETURNS INT DETERMINISTIC
+BEGIN
+    DECLARE totalPacientes INT;
+    SELECT COUNT(DISTINCT pa.persona_ID_paciente) INTO totalPacientes
+    FROM persona p
+    JOIN personal_medico pm ON p.persona_ID = pm.persona_ID
+    JOIN enfermera e ON pm.persona_ID = e.persona_ID
+    LEFT JOIN paciente_atencion pa ON e.persona_ID = pa.persona_ID_personal_medico
+    WHERE p.nombre = p_nombreDoctor AND (p.prim_apellido = p_apellidoDoctor OR p.seg_apellido = p_apellidoDoctor)
+    GROUP BY e.persona_ID;
+    RETURN totalPacientes;
+END //
+DELIMITER ;
+SELECT mostrarPacientes('Sofía', 'Gutiérrez') AS Cantidad_Pacientes;
 -- b) Implemente una función que reciba como mínimo 2 parámetros de entrada
+
 -- c) Implemente un procedimiento almacenado que por medio de una enfermedad, muestre todos los pacientes atendidos
 -- (nombre, apellidos, teléfonos) junto a su medico que lo atendió.
+DELIMITER //
+DROP PROCEDURE IF EXISTS MostrarPacientesPorEnfermedad //
+CREATE PROCEDURE MostrarPacientesPorEnfermedad(IN enfermedad_nombre VARCHAR(30))
+BEGIN
+    DECLARE enfermedad_id INT;
+    SELECT enfermedad_ID INTO enfermedad_id FROM enfermedad WHERE nombre = enfermedad_nombre;
+    SELECT 
+        p.persona_ID AS IDPaciente,
+        p.prim_apellido AS ApellidoPaterno,
+        p.seg_apellido AS ApellidoMaterno,
+        m.persona_ID AS IDMedico,
+        m.turno AS TurnoMedico
+    FROM persona p
+    JOIN paciente_atencion pa ON p.persona_ID = pa.persona_ID_paciente
+    JOIN personal_medico m ON pa.persona_ID_personal_medico = m.persona_ID
+    JOIN historia_clinica hc ON p.persona_ID = hc.persona_ID_paciente
+    JOIN historia_enfermedad he ON hc.historia_ID = he.historia_ID AND he.enfermedad_ID = enfermedad_id;
+END //
+DELIMITER ;
+
+CALL MostrarPacientesPorEnfermedad('Cataratas');
 -- d) Implemente un procedimiento almacenado que reciba por lo menos 3 parámetros de entrada
+
 -- e) Implemente un procedimiento almacenado que utilice una de las funciones anteriores.
 
 
