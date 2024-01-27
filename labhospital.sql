@@ -45,7 +45,7 @@ CREATE TABLE paciente(
 
 DROP TABLE IF EXISTS historia_clinica;
 CREATE TABLE historia_clinica(
-	historia_ID int,
+	historia_ID int AUTO_INCREMENT,
     fecha_creacion DATE,
     persona_ID_paciente int,
 	PRIMARY KEY(historia_ID,persona_ID_paciente)
@@ -125,15 +125,12 @@ ALTER TABLE paciente_atencion ADD FOREIGN KEY (persona_ID_paciente) REFERENCES p
 ALTER TABLE paciente_alergia ADD FOREIGN KEY (persona_ID) REFERENCES paciente (persona_ID);
 ALTER TABLE historia_medico ADD FOREIGN KEY (historia_ID) REFERENCES historia_clinica (historia_ID);
 ALTER TABLE historia_medico ADD FOREIGN KEY (persona_ID_medico) REFERENCES medico (persona_ID);
-
 ALTER TABLE fecha_atencion ADD FOREIGN KEY (historia_ID) REFERENCES historia_clinica (historia_ID);
-
 ALTER TABLE historia_diagnostico ADD FOREIGN KEY (historia_ID) REFERENCES historia_clinica (historia_ID);
 ALTER TABLE historia_enfermedad ADD FOREIGN KEY (historia_ID) REFERENCES historia_clinica (historia_ID);
 ALTER TABLE historia_enfermedad ADD FOREIGN KEY (enfermedad_ID) REFERENCES enfermedad (enfermedad_ID);
 ALTER TABLE enfermedad_medicamento ADD FOREIGN KEY (enfermedad_ID) REFERENCES enfermedad (enfermedad_ID);
 ALTER TABLE enfermedad_sintoma ADD FOREIGN KEY (enfermedad_ID) REFERENCES enfermedad (enfermedad_ID);
-
 
 INSERT INTO persona VALUES
 (1, 'Juan', 'Gómez', 'Martínez', 30),
@@ -465,7 +462,21 @@ END //
 DELIMITER ;
 SELECT mostrarPacientes('Sofía', 'Gutiérrez') AS Cantidad_Pacientes;
 -- b) Implemente una función que reciba como mínimo 2 parámetros de entrada
-
+DELIMITER //
+DROP FUNCTION IF EXISTS ObtenerPersonasPorEdadYCuidad //
+CREATE FUNCTION ObtenerPersonasPorEdadYCuidad(p_edad INT, p_ciudad VARCHAR(30))
+RETURNS VARCHAR(200) DETERMINISTIC
+BEGIN
+    DECLARE resultado VARCHAR(200);
+    SELECT GROUP_CONCAT(CONCAT(nombre, ' ', prim_apellido, ' ', seg_apellido) SEPARATOR ', ')
+    INTO resultado
+    FROM persona
+    JOIN paciente ON persona.persona_ID = paciente.persona_ID
+    WHERE ciudad = p_ciudad AND edad >= p_edad;
+    RETURN resultado;
+END //
+DELIMITER ;
+SELECT ObtenerPersonasPorEdadYCuidad(20,'Santiago');
 -- c) Implemente un procedimiento almacenado que por medio de una enfermedad, muestre todos los pacientes atendidos
 -- (nombre, apellidos, teléfonos) junto a su medico que lo atendió.
 DELIMITER //
@@ -473,7 +484,7 @@ DROP PROCEDURE IF EXISTS MostrarPacientesPorEnfermedad //
 CREATE PROCEDURE MostrarPacientesPorEnfermedad(IN enfermedad_nombre VARCHAR(30))
 BEGIN
     DECLARE enfermedad_id INT;
-    SELECT enfermedad_ID INTO enfermedad_id FROM enfermedad WHERE nombre = enfermedad_nombre;
+    SELECT e.enfermedad_ID INTO enfermedad_id FROM enfermedad e WHERE LOWER(e.nombre) = LOWER(enfermedad_nombre);
     SELECT 
         p.persona_ID AS IDPaciente,
         p.prim_apellido AS ApellidoPaterno,
@@ -484,13 +495,57 @@ BEGIN
     JOIN paciente_atencion pa ON p.persona_ID = pa.persona_ID_paciente
     JOIN personal_medico m ON pa.persona_ID_personal_medico = m.persona_ID
     JOIN historia_clinica hc ON p.persona_ID = hc.persona_ID_paciente
-    JOIN historia_enfermedad he ON hc.historia_ID = he.historia_ID AND he.enfermedad_ID = enfermedad_id;
+    JOIN historia_enfermedad he ON hc.historia_ID = he.historia_ID
+    WHERE enfermedad_id = he.enfermedad_ID ;
 END //
 DELIMITER ;
-
-CALL MostrarPacientesPorEnfermedad('Cataratas');
+CALL MostrarPacientesPorEnfermedad('Diabetes tipo 2');
 -- d) Implemente un procedimiento almacenado que reciba por lo menos 3 parámetros de entrada
-
+DELIMITER //
+DROP PROCEDURE IF EXISTS RegistrarAtencion //
+CREATE PROCEDURE RegistrarAtencion(
+    IN p_personaID_Paciente INT,
+    IN p_personaID_Medico INT,
+    IN p_fecha DATE,
+    IN p_diagnostico VARCHAR(30)
+)
+BEGIN
+    DECLARE historiaID INT;
+    INSERT INTO historia_clinica (persona_ID_paciente, fecha_creacion)
+    VALUES (p_personaID_Paciente, CURRENT_DATE);
+    SELECT historia_ID INTO historiaID
+    FROM historia_clinica
+    WHERE persona_ID_paciente = p_personaID_Paciente
+    ORDER BY fecha_creacion DESC
+    LIMIT 1;
+    INSERT INTO paciente_atencion (persona_ID_paciente, persona_ID_personal_medico)
+    VALUES (p_personaID_Paciente, p_personaID_Medico);
+    INSERT INTO fecha_atencion (historia_ID, fecha)
+    VALUES (historiaID, p_fecha);
+    INSERT INTO historia_medico (historia_ID, persona_ID_medico)
+    VALUES (historiaID, p_personaID_Medico);
+    INSERT INTO historia_diagnostico (historia_ID, diagnostico)
+    VALUES (historiaID, p_diagnostico);
+    SELECT CONCAT('Nueva atencion registrada con ID: ', p_personaID_Paciente) AS 'Resultado';
+END //
+DELIMITER ;
+CALL RegistrarAtencion(101, 2, '2024-01-27', 'Fiebre');
 -- e) Implemente un procedimiento almacenado que utilice una de las funciones anteriores.
-
+DELIMITER //
+DROP PROCEDURE IF EXISTS MostrarCantidadPacientesPorDoctor //
+CREATE PROCEDURE MostrarCantidadPacientesPorDoctor(
+    IN p_nombreDoctor VARCHAR(30),
+    IN p_apellidoDoctor VARCHAR(30)
+)
+BEGIN
+    DECLARE cantidadPacientes INT;
+    SET cantidadPacientes = mostrarPacientes(p_nombreDoctor, p_apellidoDoctor);
+    IF cantidadPacientes > 5 THEN
+        SELECT 'El doctor/enfermera ', p_nombreDoctor, ' ', p_apellidoDoctor, ' tiene ', cantidadPacientes, ' pacientes. Está ocupado.' AS Resultado;
+    ELSE
+        SELECT 'El doctor/enfermera ', p_nombreDoctor, ' ', p_apellidoDoctor, ' tiene ', cantidadPacientes, ' pacientes. No está tan ocupado.' AS Resultado;
+    END IF;
+END //
+DELIMITER ;
+CALL MostrarCantidadPacientesPorDoctor('Sofía', 'Gutiérrez');
 
