@@ -18,7 +18,7 @@ app.post("/verificar", (req, res) => {
         host: "localhost",
         user: usuario,
         password: contrasenia,
-        database: "labcine"
+        database: "labfloreria"
     });
     
     userDb.connect((err) => {
@@ -34,25 +34,28 @@ app.post("/verificar", (req, res) => {
 });
 
 app.post("/insertar", (req, res) => {
-    const titulo = req.body.titulo;
-    const estudio = req.body.estudio;
-    const clasificacion = req.body.clasificacion;
-    const sinopsis = req.body.sinopsis;
+    const stock = req.body.stock;
+    const ciudad = req.body.ciudad;
+    const calle = req.body.calle;
+    const numero = req.body.numero;
+    const colonia = req.body.colonia;
+    const codigo_postal = req.body.codigo_postal;
     
-    userDb.query('CALL InsertarPelicula(?,?,?,?)',[titulo,estudio,clasificacion,sinopsis],
-    (err,result)=>{
-        if(err){
+    userDb.query('INSERT INTO tienda(stock, ciudad, calle, numero, colonia, codigo_postal) VALUES (?, ?, ?, ?, ?, ?)',
+    [stock, ciudad, calle, numero, colonia, codigo_postal],
+    (err, result) => {
+        if (err) {
             console.log(err);
-        }
-        else{
-            res.send("Pelicual registrada");
+            res.status(500).send("Error al insertar en la base de datos");
+        } else {
+            console.log("Tienda registrada");
+            res.status(200).send("Tienda registrada");
         }
     });
 });
 
-
 app.get("/reporte", (req, res) => {
-    userDb.query("SELECT * FROM pelicula",
+    userDb.query("SELECT * FROM tienda",
     (err,result)=>{
         if(err){
             console.log(err);

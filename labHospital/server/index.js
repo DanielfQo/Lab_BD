@@ -18,7 +18,7 @@ app.post("/verificar", (req, res) => {
         host: "localhost",
         user: usuario,
         password: contrasenia,
-        database: "labcine"
+        database: "labhospital"
     });
     
     userDb.connect((err) => {
@@ -34,25 +34,25 @@ app.post("/verificar", (req, res) => {
 });
 
 app.post("/insertar", (req, res) => {
-    const titulo = req.body.titulo;
-    const estudio = req.body.estudio;
-    const clasificacion = req.body.clasificacion;
-    const sinopsis = req.body.sinopsis;
+    const nombre = req.body.nombre;
+    const tasa_mortalidad = req.body.tasa_mortalidad;
     
-    userDb.query('CALL InsertarPelicula(?,?,?,?)',[titulo,estudio,clasificacion,sinopsis],
-    (err,result)=>{
-        if(err){
+    userDb.query('INSERT INTO enfermedad (nombre, tasa_mortalidad) VALUES (?, ?)', [nombre, tasa_mortalidad],
+    (err, result) => {
+        if (err) {
             console.log(err);
-        }
-        else{
-            res.send("Pelicual registrada");
+            res.status(500).send("Error al insertar en la base de datos");
+        } else {
+            console.log("Enfermedad registrada");
+            res.status(200).send("Enfermedad registrada");
         }
     });
 });
 
 
+
 app.get("/reporte", (req, res) => {
-    userDb.query("SELECT * FROM pelicula",
+    userDb.query("SELECT * FROM enfermedad",
     (err,result)=>{
         if(err){
             console.log(err);
